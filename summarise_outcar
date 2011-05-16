@@ -1,0 +1,18 @@
+#/bin/bash
+
+
+if [[ -z "$1" ]]; then
+    FILE="OUTCAR"
+else
+    FILE="$1" 
+fi
+
+CPUTIME=`grep 'Total CPU time used (sec)' $FILE| sed 's/.*:[ ]*//g'`
+TOTEN=`grep 'free  energy   TOTEN' $FILE | awk '{print $5}'`
+TOTMEM=`grep 'total amount of memory used by VASP on root node' $FILE | tail -n 1 | awk '{print $11 $12}'`
+
+echo "CPU Time: $CPUTIME sec"
+echo "Energy: $TOTEN eV"
+echo "Memory: $TOTMEM"
+
+
