@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+from __future__ import division
+from sys import argv
+
+def help():
+	print " Wrong number of arguments"
+
+def calculate(i):
+	
+	print eval(i)
+
+
+if __name__ == '__main__':
+	
+	if len(argv) <= 1:
+		help()	
+	elif len(argv) == 2:
+		calculate(argv[1])
+	else:
+		help()
+

@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+"""
+Example:
+Read out the final structure from a vasprun.xml file,
+create an ASE Atoms object and use ASE to write a POSCAR file.
+"""
+
+from oppvasp.vasp.parsers import VasprunParser
+
+parser = VasprunParser('vasprun.xml')
+mol = parser.get_final_structure().get_ase_atoms_object()
+mol.write('POSCAR', format = 'vasp')
+print "Wrote POSCAR"
+

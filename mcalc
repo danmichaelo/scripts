@@ -1,0 +1,6 @@
+#!/bin/sh
+# Calculates an expression using Mathematica and mash (Mathematica Scripting Hack)
+# from http://ai.eecs.umich.edu/people/dreeves/mash/
+
+echo "Print[$*]" | mash
+

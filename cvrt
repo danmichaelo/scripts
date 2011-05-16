@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+
+import getopt, sys
+
+units = {
+	'F': 'Fahrenheit',
+	'C': 'Celsius',
+	'B': 'Bohr',
+	'A': 'Angstrom',
+	'Ha': 'Hartree',
+	'Ry': 'Rydberg',
+	'eV': 'electronvolt'
+}
+
+quiet= False
+
+def usage():
+	print " Units:"
+	for key, value in units.iteritems():
+		print " ",key,"=",value
+
+def convertUnits(i, f, t = "default"):
+	
+	n = float(i)
+
+	if not units.has_key(f):
+		print "Unknown unit",f
+		usage()
+		sys.exit()
+	
+	if not (t == 'default' or units.has_key(t)):
+		print "Unknown unit",t
+		usage()
+		sys.exit()
+
+	# Regn om:
+	if f == 'F': #Fahrenheit
+		t = 'C'
+		res = f2c(n)
+	elif f == 'C': # Celsius
+		t = 'F'
+		res = c2f(n)
+	elif f == 'B':
+		t = 'A'
+		res = bohr2angstrom(n)
+	elif f == 'A':
+		t = 'B'
+		res = angstrom2bohr(n)
+	elif f == 'Ha':
+		t = 'eV'
+		res = hartree2electronvolt(n)
+	elif f == 'Ry':
+		t = 'eV'
+		res = rydberg2electronvolt(n)
+		
+	# Skriv ut:
+	if quiet == True:
+		print res
+	else:
+		print i,units[f],"equals",res,units[t]
+
+
+# Konverteringsfunksjoner:
+def rydberg2electronvolt(n):
+	return n*13.6057
+
+def hartree2electronvolt(n):
+	return n*27.2117
+
+def bohr2angstrom(n):
+	return n*0.5291
+
+def angstrom2bohr(n):
+	return n/0.5291
+
+def f2c(n):
+	return (n-32.0)*(5.0/9) 
+
+def c2f(n):
+	return n*(5.0/9) + 32
+
+def gal2lit(n):
+	return n*3.7854
+
+def ry2ev(n):
+	return n*13.6056923
+
+def main():	
+	global quiet
+	try:
+		opts,args = getopt.getopt(sys.argv[1:],'q',['help'])
+	except getopt.GetoptError, err:
+		print str(err)
+		usage()
+		sys.exit(2)
+	
+	for o,a in opts:
+		if o == '-q':
+			quiet = True
+		elif o in ('-h','--help'):
+			usage()
+			sys.exit()
+		else:
+			assert False, "unhandled option"
+	
+	if len(args) < 2:
+		assert False, "At least two arguments needed"
+	elif len(args) == 2:
+		convertUnits(args[0],args[1],"default")
+	else:
+		convertUnits(args[0],args[1],args[2])
+
+if __name__ == '__main__':
+	main()
