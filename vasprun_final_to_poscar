@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 """
-Example:
 Read out the final structure from a vasprun.xml file,
 create an ASE Atoms object and use ASE to write a POSCAR file.
 """
