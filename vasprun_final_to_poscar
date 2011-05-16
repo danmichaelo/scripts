@@ -5,10 +5,20 @@ Read out the final structure from a vasprun.xml file,
 create an ASE Atoms object and use ASE to write a POSCAR file.
 """
 
+import sys
 from oppvasp.vasp.parsers import VasprunParser
 
-parser = VasprunParser('vasprun.xml')
+in_file= 'vasprun.xml'
+if len(sys.argv) > 1:
+    in_file = sys.argv[1]
+
+out_file = 'POSCAR'
+if len(sys.argv) > 2:
+    out_file = sys.argv[2]
+
+parser = VasprunParser(in_file)
+print "Read %s" % (in_file)
 mol = parser.get_final_structure().get_ase_atoms_object()
-mol.write('POSCAR', format = 'vasp')
-print "Wrote POSCAR"
+mol.write(out_file, format = 'vasp')
+print "Wrote %s" % (out_file)
 
