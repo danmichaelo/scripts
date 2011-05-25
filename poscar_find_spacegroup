@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# 1) Use aconvasp to write a input file for PLATON
+#    ACONVASP/AFLOW: http://materials.duke.edu/AFLOW/
+#
+# 2) Use the ADDSYM feature of PLATON to find the space group
+#    PLATON: http://www.platonsoft.nl/
+#
+
+aconvasp --platon < POSCAR > platon.ins
+echo "EXIT" >> platon.ins
+platon -o platon.ins > platon.out
+rm platon.ins
+grep 'Space Group' platon.out
+echo "See platon.out for more info"
+
