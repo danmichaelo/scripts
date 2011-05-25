@@ -8,11 +8,13 @@ else
 fi
 
 CPUTIME=`grep 'Total CPU time used (sec)' $FILE| sed 's/.*:[ ]*//g'`
-TOTEN=`grep 'free  energy   TOTEN' $FILE | awk '{print $5}'`
+TOTEN=`grep 'free  energy   TOTEN' $FILE | awk '{print $5}' | tail -n1`
 TOTMEM=`grep 'total amount of memory used by VASP on root node' $FILE | tail -n 1 | awk '{print $11 $12}'`
+NION=`grep 'free  energy   TOTEN' $FILE | wc -l`
+NEL=`grep 'free energy    TOTEN' $FILE | wc -l`
 
-echo "CPU Time: $CPUTIME sec"
-echo "Energy: $TOTEN eV"
-echo "Memory: $TOTMEM"
+echo "Spent $CPUTIME seconds and used $TOTMEM of memory."
+echo "$NION ionic and $NEL electronic steps carried out."
+echo "Final Energy: $TOTEN eV"
 
-
+grep 'plane waves' $FILE
