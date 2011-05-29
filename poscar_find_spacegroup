@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 # 1) Use aconvasp to write a input file for PLATON
 #    ACONVASP/AFLOW: http://materials.duke.edu/AFLOW/
@@ -11,7 +11,12 @@
 #
 #    Note that there are some restrictions on atom labelling (A4).
 
-aconvasp --platon < POSCAR > platon.ins
+POSCAR="POSCAR"
+if [ -n "$*" ]; then
+    POSCAR="$*"
+fi
+echo "Structure from the file: $POSCAR"
+aconvasp --platon < $POSCAR > platon.ins
 echo "CALC NEWSYM" >> platon.ins
 echo "END" >> platon.ins
 platon -o platon.ins > platon.out
