@@ -6,11 +6,16 @@
 # 2) Use the ADDSYM feature of PLATON to find the space group
 #    PLATON: http://www.platonsoft.nl/
 #
+#    PLATON can be configured, see
+#    http://www.cryst.chem.uu.nl/platon/pl000401.html
+#
+#    Note that there are some restrictions on atom labelling (A4).
 
 aconvasp --platon < POSCAR > platon.ins
-echo "EXIT" >> platon.ins
+echo "CALC NEWSYM" >> platon.ins
+echo "END" >> platon.ins
 platon -o platon.ins > platon.out
 rm platon.ins
 grep 'Space Group' platon.out
-echo "See platon.out for more info"
+echo "Please see platon.out for more info"
 
