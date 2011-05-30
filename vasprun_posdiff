@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+"""
+This script will print out the diff between the initial and final positions
+"""
+
+import numpy as np
+from oppvasp.vasp.parsers import VasprunParser
+
+parser = VasprunParser('vasprun.xml')
+
+initial = parser.get_initial_structure()
+final = parser.get_final_structure()
+
+initial_pos = initial.get_positions(coordinates='cartesian') 
+final_pos = final.get_positions(coordinates='cartesian') 
+
+diff = final_pos - initial_pos
+r2 = np.sum(diff**2, axis=1)
+
+
+print "Diff:"
+print diff
+print "r^2:"
+print r2
+
+

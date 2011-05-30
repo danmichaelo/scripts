@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+import sys,getopt
+from oppvasp.vasp.parsers import vasprunParser
+from lxml import etree
+def usage():
+    print "Prints the number of electronic SC steps found in one or more vasprun.xml files."
+    print "Usage: scsteps [options] files"
+    print " -v  Verbose output" 
+
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "hv", ["help", "verbose"]) 
+except getopt.GetoptError:
+    usage()
+    sys.exit(2)
+
+verbose = False
+for o, a in opts:
+    if o == "-v":
+        verbose = True
+    elif o in ("-h", "--help"):
+        usage()
+        sys.exit()  
+
+if len(args) < 1:
+    usage()
+    sys.exit(0)
+print opts
+for f in args: 
+    vp = vasprunParser(f)
+    sc = vp.getSCsteps()
+    print "%s\t%d" % (f,len(sc))
+    if verbose:
+        for j in sc:
+            n = j.xpath("energy/i[@name='e_0_energy']")
+            print "  ",n[0].text
+        print 
+
+  #<scstep>                                                                                                                     
+  # <time name="dav">    0.90    0.90</time>
+  # <time name="total">    0.90    0.90</time>
+  # <energy>
+  #  <i name="e_fr_energy">   -275.63256456 </i> 
+  #  <i name="e_wo_entrp">   -275.54546579 </i> 
+  #  <i name="e_0_energy">   -275.58901517 </i> 
+  # </energy>
+  #</scstep> kk  

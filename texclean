@@ -1,0 +1,11 @@
+#!/bin/bash
+# Cleans temporary tex files
+pattern="*.aux *.out *.toc *.log"           # standard
+pattern="*.dvi $pattern"                    # using PDF only
+pattern="*.bbl *.blg $pattern"              # BibTex
+pattern="*.bcf *.bbl *.run.xml $pattern"    # BibLaTex
+# rm *.lab                                  # ?
+pattern="*.snm *.nav $pattern"              # Beamer
+#echo $pattern
+rm $pattern 2>/dev/null
+true  # don't return exit code 1 if no files removed

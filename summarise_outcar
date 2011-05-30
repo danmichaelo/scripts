@@ -7,12 +7,41 @@ else
     FILE="$1" 
 fi
 
+# The 14 Bravais lattices, as VASP will print them:
+# simple cubic cell
+# body centered cubic cell
+# face centered cubic cell
+# hexagonal cell
+# simple tetragonal cell
+# body centered tetragonal cell
+# trigonal (rhomboedric) cell
+# simple orthorhombic cell
+# body centered orthorhombic cell
+# face centered orthorhombic cell
+# base centered orthorhombic cell
+# simple monoclinic cell
+# base centered monoclinic cell
+# triclinic cell
+
+echo "Symmetry:"
+orglattice=`grep -m 1 'LATTYP:' $FILE | cut -d' ' -f6- | cut -d. -f1`
+prilattice=`grep 'LATTYP:' $FILE | tail -n1 | cut -d' ' -f6- | cut -d. -f1`
+
+echo " Bravais lattice: $orglattice"
+echo " Primitive Bravais lattice: $prilattice"
+psg=`grep -A1 "static configuration has the point" $FILE`
+echo " $psg"
+
+echo " "
 CPUTIME=`grep 'Total CPU time used (sec)' $FILE| sed 's/.*:[ ]*//g'`
-TOTEN=`grep 'free  energy   TOTEN' $FILE | awk '{print $5}'`
+TOTEN=`grep 'free  energy   TOTEN' $FILE | awk '{print $5}' | tail -n1`
 TOTMEM=`grep 'total amount of memory used by VASP on root node' $FILE | tail -n 1 | awk '{print $11 $12}'`
+NION=`grep 'free  energy   TOTEN' $FILE | wc -l`
+NEL=`grep 'free energy    TOTEN' $FILE | wc -l`
+echo "Spent $CPUTIME seconds and used $TOTMEM of memory."
+echo "$NION ionic and $NEL electronic steps carried out."
 
-echo "CPU Time: $CPUTIME sec"
-echo "Energy: $TOTEN eV"
-echo "Memory: $TOTMEM"
+echo " "
+echo "Final Energy: $TOTEN eV"
 
-
+#grep 'plane waves' $FILE
