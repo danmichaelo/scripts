@@ -1,6 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-grep 'free  energy' OUTCAR | awk '{print $5}' > _tmp_energies00001
+OUTCAR="OUTCAR"
+if [ -n "$*" ]; then
+    OUTCAR="$*"
+fi
+grep 'free  energy' $OUTCAR | awk '{print $5}' > _tmp_energies00001
 gnuplot << EOF
 set term postscript
 set output "outcar_plot_energies.ps"
