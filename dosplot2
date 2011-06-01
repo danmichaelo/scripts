@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# split_dos must be performed first
+
+split_dos
+
+gnuplot ~/bin/dosplot.gnuplot
