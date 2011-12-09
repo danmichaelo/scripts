@@ -4,62 +4,37 @@
 
 import os, sys
 import numpy as np
-import getopt
+from optparse import OptionParser
 from oppvasp.vasp.parsers import read_trajectory
 from oppvasp.plotutils import DisplacementPlot
 
 ################################# OPTIONS ########################################
 
-def usage():
-    print "Usage: plot_displacement.py [first_step] [last_step] [atom] [filename]\n" \
-            + "Generates a plot of r^2(t)"
+# Parse cmd line args
+parser = OptionParser()
+pdf_file = os.path.splitext(os.path.basename(sys.argv[0]))[0] + '.pdf'
+parser.add_option('--pdf', dest = 'pdf_file', default = pdf_file, help = 'Destination PDF')
+parser.add_option('--xml', dest = 'xml_file', default = 'vasprun.xml', help = 'Input vasprun.xml')
+parser.add_option('--poscar', dest = 'poscar_file', default = 'POSCAR', help = 'Input POSCAR')
+parser.add_option('-f', '--firststep', metavar='STEP', dest = 'first_step', type='int', default = 1, help = 'First ion step to include')
+parser.add_option('-l', '--laststep', metavar='STEP', dest = 'last_step', type='int', default = -1, help = 'Last ion step to include')
+parser.add_option('-a', '--atom', metavar='ATOM', dest = 'atom_no', type='int', default = 0, help = 'Index of atom to watch (first index is 0)')
+(options, args) = parser.parse_args()
 
-
-try:    #parse the arguments
-    opts, args = getopt.getopt(sys.argv[1:], "h", ["help", "first_step=","last_step=","atom=","filename="])
-except getopt.GetoptError:
-    usage()
-    sys.exit(2)
-
-first_step = 0
-last_step = -1
-atom_no = 0
-filename = os.path.splitext(os.path.basename(sys.argv[0]))[0] + '.pdf'
-
-if len(args) > 0:
-    first_step = int(args[0])
-    if len(args) > 1:
-        last_step = int(args[1])
-        if len(args) > 2:
-            atom_no = int(args[2])
-            if len(args) > 3:
-                filename = args[3]
-
-for opt in opts:
-    if opt[0] == '--filename':
-        filename = opt[1]
-    if opt[0] == '--first_step':
-        first_step = int(opt[1])
-    if opt[0] == '--last_step':
-        last_step = int(opt[1])
-    if opt[0] == '--atom':
-        atom_no = int(opt[1])
-
-print "Range: %i:%i. Atom: %i" % (first_step, last_step, atom_no)
-
+print "Range: %i:%i. Atom: %i" % (options.first_step, options.last_step, options.atom_no)
 
 ############################## MAIN SCRIPT ######################################
 
 # Read trajectory:
-traj = read_trajectory(unwrap_pbcs = True, poscar_file = 'POSCAR')
-traj.set_selection(first_step, last_step)
+traj = read_trajectory(xml_file = options.xml_file, unwrap_pbcs = True, poscar_file = options.poscar_file)
+traj.set_selection(options.first_step, options.last_step)
 
 # Make plot
 dp = DisplacementPlot(traj)
 dp.add_plot( what = 'r2', smoothen = True, style = { 'linestyle' : '--', 'dashes' : (3,1), 'color' : 'black' } ) # avg r^2 for all atoms
 #dp.add_plot( what = 'x', atom_no = 0, smoothen = True, linear_fit = True)
 dp.add_plot( what = 'r2', atom_no = 0, smoothen = True, linear_fit = False)
-dp.add_plot( what = 'r2', atom_no = 0, smoothen = True, linear_fit = True)
+#dp.add_plot( what = 'r', atom_no = 0, smoothen = True, linear_fit = True)
 #dp.add_plot( what = 'x', atom_no = 0, smoothen = False, style = { 'zorder' : -1, 'alpha': 0.4, 'color': 'gray' } )
 
 ymax = 0
@@ -75,5 +50,5 @@ ymax = (ymax)*1.1
 ymin = (ymin)*1.1
 dp.ax1.set_ylim(ymin,ymax)
 
-dp.save_plot(filename)
+dp.save_plot(options.pdf_file)
 

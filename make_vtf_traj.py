@@ -7,7 +7,6 @@ import numpy as np
 from progressbar import ProgressBar, Percentage, Bar, ETA, FileTransferSpeed, \
              RotatingMarker, ReverseBar, SimpleProgress
 
-from oppvasp import getAtomicNumberFromSymbol
 from oppvasp.vasp.parsers import IterativeVasprunParser, PoscarParser
 from oppvasp.md import Trajectory
 
@@ -79,7 +78,7 @@ for i in range(nsteps):
     f.write("\n# Energy: %.3f\n" % total_energy[i])
     f.write("timestep\n")
     uc = getUnitCell(i)
-    f.write("unitcell %.2f %.2f %.2f %.1f %.1f %.1f\n" % uc)
+    f.write("pbc %.2f %.2f %.2f %.1f %.1f %.1f\n" % uc)
     for j in range(nions):
         # convert to cartesian (Angstrom):
         at_pos = np.dot(positions[i,j], basis[i])

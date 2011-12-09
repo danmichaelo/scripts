@@ -29,6 +29,14 @@ be specified in angstroms.
 
 """
 
+from optparse import OptionParser
+parser = OptionParser( usage = "usage: %prog [options] FILE" ) 
+(options, args) = parser.parse_args()
+
+vasprun_file = 'vasprun.xml'
+if len(args) > 0:
+    vasprun_file = args[0]
+
 # Scale the forces by this factor for visualization
 force_scale_factor = 1.0
 
@@ -36,7 +44,7 @@ import numpy as np
 from oppvasp.vasp.parsers import IterativeVasprunParser
 from oppvasp import elements
 
-parser = IterativeVasprunParser('vasprun.xml')
+parser = IterativeVasprunParser(vasprun_file)
 traj = parser.get_all_trajectories()
 pos = traj.positions
 forces = traj.forces * force_scale_factor

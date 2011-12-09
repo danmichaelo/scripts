@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import sys
+from copy import copy
+import numpy as np
+from optparse import OptionParser
+from oppvasp.vasp.parsers import PoscarParser
+
+def unwrap_pbc(init_struct, final_struct):
+    """ 
+    Unwraps periodic boundary conditions (PBCs) of final_pos by comparison with init_pos.
+    Note that this procedure generates coordinates outside the unit cell. 
+    
+    Example:
+    ----------
+    
+    >>> init_struct = PoscarParser('POSCAR').get_structure()
+    >>> final_struct = PoscarParser('CONTCAR').get_structure()
+    >>> unwrap_pbc(init_struct, final_struct)
+    
+    """
+    
+    init_pos = init_struct.get_positions('direct')
+    final_pos = final_struct.get_positions('direct')
+    
+    if init_pos.shape[0] != final_pos.shape[0]:
+        print "Error: initial and final structures must contain the same number of atoms"
+    num_atoms = init_pos.shape[0]
+    
+    dr = final_pos - init_pos
+    c = np.abs(np.array((dr-1, dr, dr+1)))
+    diff = np.array([[np.argmin(c[:,i,j]) for j in range(3)] for i in range(num_atoms)]) - 1  # (-1,0,1)
+    dr += diff
+    out_pos = init_pos + dr
+    final_struct.set_positions(out_pos)
+    return final_struct
+
+
+contcar = "CONTCAR"
+poscar = "POSCAR"
+parser = OptionParser( usage = "usage: %prog [options] CONTCAR POSCAR")
+parser.add_option('-o', '--outfile', dest = 'outfile', default = 'DEFAULT')
+(options, args) = parser.parse_args()
+if len(args) > 0:
+    contcar = args[0]
+if len(args) > 1:
+    poscar = args[1]
+if len(args) > 2:
+    print "Error: Too many arguments"
+    parser.print_usage()
+    sys.exit(1)
+if options.outfile == 'DEFAULT':
+    options.outfile = contcar + '_unwrapped'
+
+init_struct = PoscarParser(poscar).get_structure()
+final_struct = PoscarParser(contcar).get_structure()
+unwrapped_struct = unwrap_pbc(copy(init_struct), copy(final_struct))
+unwrapped_struct.save(options.outfile)
+print "Wrote %s" % (options.outfile)
+
