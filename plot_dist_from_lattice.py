@@ -55,15 +55,15 @@ class DistanceFromLatticeSites(object):
             844: 'red'
         }
     
-    def read_trajectory(self, traj_dir = './', xml_file ='vasprun.xml', npz_pbc_file = 'trajectory_pbc.npz', npz_file = 'trajectory_nopbc.npz' ):
-        if os.path.isfile(traj_dir + npz_nopbc_file):
-            traj = Trajectory(filename = traj_dir +npz_nopbc_file)
-        else:
-            p = IterativeVasprunParser(traj_dir + xml_file)
-            traj = p.get_all_trajectories( coords = 'cart' )
-            traj.save(traj_dir + npz_pbc_file)
-            # we do NOT unwrap the PBCs
-        return traj
+    #def read_trajectory(self, traj_dir = './', xml_file ='vasprun.xml', npz_pbc_file = 'trajectory_pbc.npz', npz_file = 'trajectory_nopbc.npz' ):
+    #    if os.path.isfile(traj_dir + npz_nopbc_file):
+    #        traj = Trajectory(filename = traj_dir +npz_nopbc_file)
+    #    else:
+    #        p = IterativeVasprunParser(traj_dir + xml_file)
+    #        traj = p.get_all_trajectories( coords = 'cart' )
+    #        traj.save(traj_dir + npz_pbc_file)
+    #        # we do NOT unwrap the PBCs
+    #    return traj
 
     def follow(self, follow_atom = 0, num_neighbours = 3, step_size = 50):
         self.num_neighbours = num_neighbours # numbers of nearest neighbours to plot distance to
