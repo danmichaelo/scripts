@@ -22,19 +22,30 @@ from oppvasp.vasp.parsers import VasprunParser, IterativeVasprunParser, PoscarPa
 
 import time,datetime
 
-class PlotDistanceFromLattice(object):
+class DistanceFromLatticeSites(object):
     """
     This class calculates the distances between any atom in the trajectory and the n nearest lattice site(s).
     The lattice sites are read from the file 'lattice_poscar', and the number of sites defined in the poscar
     need not be equal to the number of atoms found in the trajectory file.
     """
 
-    def __init__(self, trajectory_dir = './', lattice_poscar = '', follow_atom = 0, num_neighbours = 3, step_size = 50):
+    def __init__(self, trajectory_dir = './', lattice_poscar = ''):
+        
+        
         self.traj_dir = trajectory_dir
         self.lattice_poscar = lattice_poscar
-        self.traj = read_trajectory( xml_file = trajectory_dir+'vasprun.xml', unwrap_pbcs = True )
+        self.traj = read_trajectory( trajectory_dir, unwrap_pbcs = True )
 
-        self.num_neighbours = num_neighbours # numbers of nearest neighbours to plot distance to
+        self.pos = self.traj.get_all_trajectories( coords = 'cartesian' )
+        self.natoms = self.pos.shape[1]
+        self.nsteps = self.pos.shape[0]
+
+        self.poscar = PoscarParser( lattice_poscar )
+        
+        # Read reference lattice:
+        self.lattice = self.poscar.get_positions( coords = 'cartesian')
+        self.nsites = self.lattice.shape[0]
+        print "Reference POSCAR contains %d lattice sites" % (self.nsites)
 
         self.bottombar_height = .3
         self.bottombar_colors = {
@@ -43,40 +54,7 @@ class PlotDistanceFromLattice(object):
             868: 'blue',
             844: 'red'
         }
-
-        try:
-            "%d" % follow_atom
-        except TypeError:
-            print "Generating geometric mean"
-            geo = self.traj.get_geometric_center((0,1))
-            self.traj.remove_atom(0)
-            self.traj.remove_atom(0)
-            follow_atom = self.traj.add_atom(geo)
-
-        self.pos = self.traj.get_all_trajectories( coords = 'cart' )
-        self.natoms = self.pos.shape[1]
-        self.nsteps = self.pos.shape[0]
-
-        print "Generating symmetric running mean..."
-        self.pos[:,follow_atom] = symmetric_running_mean(self.pos[:,follow_atom],250)
-        #pos[:,0] = symmetric_running_mean(pos[:,0],500)
-        
-
-        # Read reference lattice:
-        pp = PoscarParser( lattice_poscar )
-        self.lattice = pp.get_positions( coords = 'cart')
-        self.nsites = self.lattice.shape[0]
-        print "Reference POSCAR contains %d lattice sites" % (self.nsites)
-
-
-        #import profile
-        #profile.run('get_occupancies()')
-        
-        # Calculate occupancies, nearest site for atom x and distance to nearest site(s)
-        self.step_size = step_size
-        self.occupancies, self.followed_atom_site, self.followed_atom_r2 = self.get_occupancies( follow_atom = follow_atom)
-        
-
+    
     def read_trajectory(self, traj_dir = './', xml_file ='vasprun.xml', npz_pbc_file = 'trajectory_pbc.npz', npz_file = 'trajectory_nopbc.npz' ):
         if os.path.isfile(traj_dir + npz_nopbc_file):
             traj = Trajectory(filename = traj_dir +npz_nopbc_file)
@@ -86,6 +64,33 @@ class PlotDistanceFromLattice(object):
             traj.save(traj_dir + npz_pbc_file)
             # we do NOT unwrap the PBCs
         return traj
+
+    def follow(self, follow_atom = 0, num_neighbours = 3, step_size = 50):
+        self.num_neighbours = num_neighbours # numbers of nearest neighbours to plot distance to
+
+        #try:
+        #    "%d" % follow_atom
+        #except TypeError:
+        #    print "Generating geometric mean"
+        #    geo = self.traj.get_geometric_center((0,1))
+        #    self.traj.remove_atom(0)
+        #    self.traj.remove_atom(0)
+        #    follow_atom = self.traj.add_atom(geo)
+
+        print "Generating symmetric running mean..."
+        self.pos[:,follow_atom] = symmetric_running_mean(self.pos[:,follow_atom],250)
+        #pos[:,0] = symmetric_running_mean(pos[:,0],500)
+        
+        #import profile
+        #profile.run('get_occupancies()')
+        
+        # Calculate occupancies, nearest site for atom x and distance to nearest site(s)
+        self.step_size = step_size
+        self.occupancies, self.followed_atom_site, self.followed_atom_r2 = self.get_occupancies( follow_atom = follow_atom)
+
+    def get_index(self,lst,val):
+        """Returns first index of val in lst"""
+        return [i for i,x in enumerate(lst) if x == val][0]
 
     def get_occupancies(self, follow_atom = 0, closest_sites = 8, make_periodic_supercell = False):
         """
@@ -98,7 +103,7 @@ class PlotDistanceFromLattice(object):
              at any time, and the distances to those sites.
 
         Parameters:
-            follow_atom : (int) the atom id to follow
+            follow_atom : (int) or list of ints - the atom id(s) to follow
             closest_sites : (int) the number of closest sites to include. 
             Increasing this value does not affect the processing time very much.
 
@@ -115,20 +120,30 @@ class PlotDistanceFromLattice(object):
 
         # initialize arrays:
         nclosest = closest_sites # plot <> closest sites
-        p_site = np.zeros((n,nclosest), dtype=int)
-        p_dist_r2 = np.zeros((n,nclosest))
+        p_site = np.zeros((len(follow_atom),n,nclosest), dtype=int)
+        p_dist_r2 = np.zeros((len(follow_atom),n,nclosest))
         # for each MD step
         for i in range(n):
             stepno = i * self.step_size
             pbar.update(stepno)
+
             
             # for each atom
             for atno in range(self.natoms):
+                dist = self.lattice - self.pos[stepno,atno]
                 atpos = self.pos[stepno,atno]
                 
                 # Make a (nsites,3) matrix with vectors pointing from the atom to each lattice site
                 dist = self.lattice - atpos
+
+                # a) Minimum image convention work for most unit cells:
+                #    (use direct coordinates)
+                #
+                #dist = dist - (2*dist-1).astype(np.int)
                
+                # b) Alternative (slower) routine that can be used with very skewed unit cells: 
+                #    (use cartesian instead of direct coordinates)
+                #
                 if make_periodic_supercell:
                     # Make a (3,nsites,3) tensor with one periodic image in each of the directions +x,-x,+y,-y,+z,-z:
                     dist_i = np.abs(np.array((dist-1,dist,dist+1))) 
@@ -142,29 +157,32 @@ class PlotDistanceFromLattice(object):
                 #closest_site = np.argmin(dist_r2)
                 closest_sites = np.argsort(dist_r2)
 
-                if atno == follow_atom:
-                    p_site[i] = closest_sites[0:nclosest]
-                    p_dist_r2[i] = dist_r2[p_site[i]]
+                if atno in follow_atom:
+                    idx = self.get_index(follow_atom,atno)
+                    p_site[idx,i] = closest_sites[0:nclosest]
+                    p_dist_r2[idx,i] = dist_r2[p_site[idx,i]]
 
                 # Update occupancies array:
                 occupancies[i,closest_sites[0]] += 1
            
         pbar.finish()
+        # (atno, stepno, nclosest)
 
-        p_sites = { }
-        for site in p_site[:,0]: # closest site
-            if site in p_sites:
-                p_sites[site] += 1
-            else:
-                p_sites[site] = 1
-        invtot = 100./p_site.shape[0]
-        print "-----------"
-        keys = p_sites.keys()
-        for k in np.argsort(p_sites.values())[::-1]:  # reverse order 
-            site = keys[k]
-            print "At site %d for %.1f%% of the time (%.2f,%.2f,%.2f)" % (site,p_sites[site]*invtot,self.lattice[site][0],self.lattice[site][1],self.lattice[site][2])
-        print "-----------"
-
+        #p_sites = { }
+        ## loop over atno
+        #for atidx, at in enumerate(p_site[:,:,0]):
+        #    for site in at[:,0]: # closest site
+        #        if site in p_sites:
+        #            p_sites[site] += 1
+        #        else:
+        #            p_sites[site] = 1
+        #    invtot = 100./p_site.shape[0]
+        #    print "-----------"
+        #    keys = p_sites.keys()
+        #    for k in np.argsort(p_sites.values())[::-1]:  # reverse order 
+        #        site = keys[k]
+        #        print "At site %d for %.1f%% of the time (%.2f,%.2f,%.2f)" % (site,p_sites[site]*invtot,self.lattice[site][0],self.lattice[site][1],self.lattice[site][2])
+        #    print "-----------"
 
 
         return occupancies, p_site, p_dist_r2
@@ -282,11 +300,19 @@ class PlotDistanceFromLattice(object):
         self.plt.savefig(fig_filename)
         sys.stdout.write("done!\n")
 
+    def time_at_lattice_sites(self, treshold = 0.5):
+        print self.followed_atom_r2.shape  # (65, 600, 8)
+        y = np.sqrt(self.followed_atom_r2[:,:,0:self.num_neighbours])
+        print "y",y.shape
+        return [float(j[j<treshold].shape[0])/j.shape[0] for j in y]
+        #print y[not y>treshold].shape
+
 
 if __name__ == "__main__":
     poscar = '/Users/danmichael/Documents/Studier/Master/notur/hipersol/templates/si64/POSCAR_3x3_symmetric'
-    dp = PlotDistanceFromLattice('./', lattice_poscar = poscar, follow_atom = 0, step_size = 50)
+    dp = DistanceFromLatticeSites('./', lattice_poscar = poscar, follow_atom = 0, step_size = 50, num_neighbours = 1)
     filename = os.path.splitext(os.path.basename(sys.argv[0]))[0] + '.pdf'
     dp.plot()
     dp.save(filename)
+    #dp.analyse()
 

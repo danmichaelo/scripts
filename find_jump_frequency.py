@@ -67,13 +67,14 @@ class FindNearestSite(object):
         print "Nearest site is %d (%.3f Ang)" % (siteid, sitedist)
         sitepos = self.lattice[siteid]
         dist = np.sqrt(np.sum((sitepos-atompos)**2, axis=1))
+        print dist.shape
         print "Plotting vib"
 
         plt.subplot(2,1,1)
         plt.plot(time,dist)
         plt.xlim(time[0],time[-1])
         #print np.linspace(time[0], time[-1], 21)
-        plt.xticks(np.linspace(time[0], time[-1], 21))
+        #plt.xticks(np.linspace(time[0], time[-1], 10))
         plt.xlabel("Time [ps]")
         plt.ylabel(u"$r(t)-R$ [Å]")
         plt.grid('on')
@@ -88,17 +89,20 @@ class FindNearestSite(object):
 
         qfft = fft(dist)
         n=len(qfft)
-        power = np.abs(qfft[0:(n/2)])**2
-        nyquist=1./2
-        freq=np.array(range(n/2))/(n/2.0)*nyquist
-
-        power = power[1:]
-        freq = freq[1:]
-
-        period=1./freq
+        print "Len is",n
+        power = np.abs(qfft)**2
         
-        maxidx = np.argmax(power)
-        print "Strongest period:",period[maxidx]
+        #nyquist=1.0/2
+        #freq=np.array(range(n/2))/(n/2.0)*nyquist
+        freq = np.fft.fftfreq(n)
+
+        #power = power[1:]
+        #freq = freq[1:]
+
+        #period=1./freq
+        
+        #maxidx = np.argmax(power)
+        #print "Strongest period:",period[maxidx]
         
 
         #for coef,freq in zip(w,freqs):
@@ -107,8 +111,10 @@ class FindNearestSite(object):
 
         #df = rfft(dist)
         plt.subplot(2,1,2)
-        plt.plot(period, power, '.-b')
-        plt.xlim(0,600)
+        #plt.hist(power[1:n/2], 50)
+        plt.plot(freq[1:n/2], power[1:n/2], '-b')
+        #plt.plot(freq, qfft.imag, '-g')
+        plt.xlim(0.0, 0.01)
         plt.savefig('out.pdf')
         return dist
     
@@ -186,7 +192,7 @@ class FindNearestSite(object):
 if __name__ == "__main__":
     poscar = '/Users/danmichael/Documents/Studier/Master/notur/hipersol/templates/si64/POSCAR_3x3_symmetric'
     dp = FindNearestSite('./', lattice_poscar = poscar, atomid = 0)
-    d = dp.find_vib_freq(32, firstframe = 1000, lastframe = 2000)
+    d = dp.find_vib_freq(32, firstframe = 0, lastframe = 29999)
     plt.show()
     #dp.analyze( min_time = 0.5)
 
